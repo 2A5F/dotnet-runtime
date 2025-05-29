@@ -22,6 +22,20 @@ namespace System.Collections.Generic
         }
     }
 
+    internal sealed partial class ArraySortHelperSpecialization<T, TComparer>
+        where TComparer : IComparer<T>?
+    {
+        private static readonly ArraySortHelperSpecialization<T, TComparer> s_defaultArraySortHelper = new ArraySortHelperSpecialization<T, TComparer>();
+
+        public static ArraySortHelperSpecialization<T, TComparer> Default
+        {
+            get
+            {
+                return s_defaultArraySortHelper;
+            }
+        }
+    }
+
     internal partial class ArraySortHelper<TKey, TValue>
     {
         private static readonly ArraySortHelper<TKey, TValue> s_defaultArraySortHelper = new ArraySortHelper<TKey, TValue>();

@@ -4313,7 +4313,7 @@ namespace System
         {
             if (span.Length > 1)
             {
-                ArraySortHelper<T>.Default.Sort(span, comparer); // value-type comparer will be boxed
+                ArraySortHelperSpecialization<T, TComparer>.Default.Sort(span, comparer);
             }
         }
 
