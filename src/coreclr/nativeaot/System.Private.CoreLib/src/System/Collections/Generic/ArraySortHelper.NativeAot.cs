@@ -22,12 +22,12 @@ namespace System.Collections.Generic
         }
     }
 
-    internal sealed partial class ArraySortHelperSpecialization<T, TComparer>
+    internal sealed partial class ArraySortHelper<T, TComparer>
         where TComparer : IComparer<T>?
     {
-        private static readonly ArraySortHelperSpecialization<T, TComparer> s_defaultArraySortHelper = new ArraySortHelperSpecialization<T, TComparer>();
+        private static readonly ArraySortHelper<T, TComparer> s_defaultArraySortHelper = new ArraySortHelper<T, TComparer>();
 
-        public static ArraySortHelperSpecialization<T, TComparer> Default
+        public static ArraySortHelper<T, TComparer> Default
         {
             get
             {
@@ -36,11 +36,24 @@ namespace System.Collections.Generic
         }
     }
 
-    internal partial class ArraySortHelper<TKey, TValue>
+    internal partial class ArraySortHelperPaired<TKey, TValue>
     {
-        private static readonly ArraySortHelper<TKey, TValue> s_defaultArraySortHelper = new ArraySortHelper<TKey, TValue>();
+        private static readonly ArraySortHelperPaired<TKey, TValue> s_defaultArraySortHelper = new ArraySortHelperPaired<TKey, TValue>();
 
-        public static ArraySortHelper<TKey, TValue> Default
+        public static ArraySortHelperPaired<TKey, TValue> Default
+        {
+            get
+            {
+                return s_defaultArraySortHelper;
+            }
+        }
+    }
+
+    internal partial class ArraySortHelperPaired<TKey, TValue, TComparer>
+    {
+        private static readonly ArraySortHelperPaired<TKey, TValue, TComparer> s_defaultArraySortHelper = new ArraySortHelperPaired<TKey, TValue, TComparer>();
+
+        public static ArraySortHelperPaired<TKey, TValue, TComparer> Default
         {
             get
             {

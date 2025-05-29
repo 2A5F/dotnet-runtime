@@ -2153,6 +2153,23 @@ namespace System
             return ctor.Invoker.InvokeWithNoArgs(obj: null, invokeAttr: default)!;
         }
 
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type genericType,
+            RuntimeType genericArgument,
+            RuntimeType genericArgument2,
+            RuntimeType genericArgument3)
+        {
+            RuntimeType? gt = null;
+            MakeGenericType(genericType, new Type[] { genericArgument, genericArgument2, genericArgument3 }, ObjectHandleOnStack.Create(ref gt));
+            RuntimeConstructorInfo? ctor = gt!.GetDefaultConstructor();
+
+            // CreateInstanceForAnotherGenericParameter requires type to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.
+            if (ctor is null || !ctor.IsPublic)
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt!));
+
+            return ctor.Invoker.InvokeWithNoArgs(obj: null, invokeAttr: default)!;
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void MakeGenericType(Type gt, Type[] types, ObjectHandleOnStack res);
 

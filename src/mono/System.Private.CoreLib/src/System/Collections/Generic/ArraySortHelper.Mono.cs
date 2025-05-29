@@ -12,7 +12,8 @@ namespace System.Collections.Generic
         int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey>? comparer);
     }
 
-    internal interface IArraySortHelperSpecialization<TKey, TComparer> where TComparer : IComparer<TKey>?
+    internal interface IArraySortHelper<TKey, TComparer>
+        where TComparer : IComparer<TKey>?, allows ref struct
     {
         void Sort(Span<TKey> keys, TComparer comparer);
         int BinarySearch(TKey[] keys, int index, int length, TKey value, TComparer comparer);
@@ -42,43 +43,43 @@ namespace System.Collections.Generic
 
         void IArraySortHelper<T>.Sort(Span<T> keys, IComparer<T>? comparer)
         {
-            ArraySortHelperSpecialization<T, IComparer<T>?>.Sort(keys, comparer);
+            ArraySortHelper<T, IComparer<T>?>.Sort(keys, comparer);
         }
 
         int IArraySortHelper<T>.BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
-            return ArraySortHelperSpecialization<T, IComparer<T>?>.BinarySearch(array, index, length, value, comparer);
+            return ArraySortHelper<T, IComparer<T>?>.BinarySearch(array, index, length, value, comparer);
         }
     }
 
-    internal sealed partial class ArraySortHelperSpecialization<T, TComparer>
-        : IArraySortHelperSpecialization<T, TComparer>
+    internal sealed partial class ArraySortHelper<T, TComparer>
+        : IArraySortHelper<T, TComparer>
         where TComparer : IComparer<T>?
     {
-        private static readonly IArraySortHelperSpecialization<T, TComparer> s_defaultArraySortHelper = CreateArraySortHelper();
+        private static readonly IArraySortHelper<T, TComparer> s_defaultArraySortHelper = CreateArraySortHelper();
 
-        public static IArraySortHelperSpecialization<T, TComparer> Default => s_defaultArraySortHelper;
+        public static IArraySortHelper<T, TComparer> Default => s_defaultArraySortHelper;
 
-        private static IArraySortHelperSpecialization<T, TComparer> CreateArraySortHelper()
+        private static IArraySortHelper<T, TComparer> CreateArraySortHelper()
         {
-            IArraySortHelperSpecialization<T, TComparer> defaultArraySortHelper;
+            IArraySortHelper<T, TComparer> defaultArraySortHelper;
 
             if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)))
             {
-                defaultArraySortHelper = (IArraySortHelperSpecialization<T, TComparer>)RuntimeType.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelperSpecialization<string, IComparer<string>>), (RuntimeType)typeof(T), (RuntimeType)typeof(TComparer));
+                defaultArraySortHelper = (IArraySortHelper<T, TComparer>)RuntimeType.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelper<string, IComparer<string>>), (RuntimeType)typeof(T), (RuntimeType)typeof(TComparer));
             }
             else
             {
-                defaultArraySortHelper = new ArraySortHelperSpecialization<T, TComparer>();
+                defaultArraySortHelper = new ArraySortHelper<T, TComparer>();
             }
             return defaultArraySortHelper;
         }
 
-        void IArraySortHelperSpecialization<T, TComparer>.Sort(Span<T> keys, TComparer comparer)
+        void IArraySortHelper<T, TComparer>.Sort(Span<T> keys, TComparer comparer)
         {
             Sort(keys, comparer);
         }
-        int IArraySortHelperSpecialization<T, TComparer>.BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
+        int IArraySortHelper<T, TComparer>.BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
         {
             return BinarySearch(array, index, length, value, comparer);
         }
@@ -98,52 +99,105 @@ namespace System.Collections.Generic
         }
     }
 
-    internal sealed partial class GenericArraySortHelperSpecialization<T, TComparer>
-        : IArraySortHelperSpecialization<T, TComparer>
+    internal sealed partial class GenericArraySortHelper<T, TComparer>
+        : IArraySortHelper<T, TComparer>
         where TComparer : IComparer<T>?
         where T : IComparable<T>
     {
-        void IArraySortHelperSpecialization<T, TComparer>.Sort(Span<T> keys, TComparer comparer)
+        void IArraySortHelper<T, TComparer>.Sort(Span<T> keys, TComparer comparer)
         {
             Sort(keys, comparer);
         }
 
-        int IArraySortHelperSpecialization<T, TComparer>.BinarySearch(T[] keys, int index, int length, T value, TComparer comparer)
+        int IArraySortHelper<T, TComparer>.BinarySearch(T[] keys, int index, int length, T value, TComparer comparer)
         {
             return BinarySearch(keys, index, length, value, comparer);
         }
     }
 
-    internal interface IArraySortHelper<TKey, TValue>
+    internal interface IArraySortHelperPaired<TKey, TValue>
     {
         void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer);
     }
 
-    internal sealed partial class ArraySortHelper<TKey, TValue>
-        : IArraySortHelper<TKey, TValue>
+    internal interface IArraySortHelperPaired<TKey, TValue, TComparer>
+        where TComparer : IComparer<TKey>?, allows ref struct
     {
-        private static readonly IArraySortHelper<TKey, TValue> s_defaultArraySortHelper = CreateArraySortHelper();
+        void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer);
+    }
 
-        public static IArraySortHelper<TKey, TValue> Default => s_defaultArraySortHelper;
+    internal sealed partial class ArraySortHelperPaired<TKey, TValue>
+        : IArraySortHelperPaired<TKey, TValue>
+    {
+        private static readonly IArraySortHelperPaired<TKey, TValue> s_defaultArraySortHelper = CreateArraySortHelper();
 
-        private static IArraySortHelper<TKey, TValue> CreateArraySortHelper()
+        public static IArraySortHelperPaired<TKey, TValue> Default => s_defaultArraySortHelper;
+
+        private static IArraySortHelperPaired<TKey, TValue> CreateArraySortHelper()
         {
-            IArraySortHelper<TKey, TValue> defaultArraySortHelper;
+            IArraySortHelperPaired<TKey, TValue> defaultArraySortHelper;
 
             if (typeof(IComparable<TKey>).IsAssignableFrom(typeof(TKey)))
             {
-                defaultArraySortHelper = (IArraySortHelper<TKey, TValue>)RuntimeType.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelper<,>), (RuntimeType)typeof(TKey), (RuntimeType)typeof(TValue));
+                defaultArraySortHelper = (IArraySortHelperPaired<TKey, TValue>)RuntimeType.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelperPaired<,>), (RuntimeType)typeof(TKey), (RuntimeType)typeof(TValue));
             }
             else
             {
-                defaultArraySortHelper = new ArraySortHelper<TKey, TValue>();
+                defaultArraySortHelper = new ArraySortHelperPaired<TKey, TValue>();
             }
             return defaultArraySortHelper;
         }
+
+        void IArraySortHelperPaired<TKey, TValue>.Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        {
+            Sort(keys, values, comparer);
+        }
     }
 
-    internal sealed partial class GenericArraySortHelper<TKey, TValue>
-        : IArraySortHelper<TKey, TValue>
+    internal sealed partial class ArraySortHelperPaired<TKey, TValue, TComparer>
+        : IArraySortHelperPaired<TKey, TValue, TComparer>
+        where TComparer : IComparer<TKey>?
     {
+        private static readonly IArraySortHelperPaired<TKey, TValue, TComparer> s_defaultArraySortHelper = CreateArraySortHelper();
+
+        public static IArraySortHelperPaired<TKey, TValue, TComparer> Default => s_defaultArraySortHelper;
+
+        private static IArraySortHelperPaired<TKey, TValue, TComparer> CreateArraySortHelper()
+        {
+            IArraySortHelperPaired<TKey, TValue, TComparer> defaultArraySortHelper;
+
+            if (typeof(IComparable<TKey>).IsAssignableFrom(typeof(TKey)))
+            {
+                defaultArraySortHelper = (IArraySortHelperPaired<TKey, TValue, TComparer>)RuntimeType.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelperPaired<string, string, IComparer<string>>), (RuntimeType)typeof(TKey), (RuntimeType)typeof(TValue), (RuntimeType)typeof(TComparer));
+            }
+            else
+            {
+                defaultArraySortHelper = new ArraySortHelperPaired<TKey, TValue, TComparer>();
+            }
+            return defaultArraySortHelper;
+        }
+
+        void IArraySortHelperPaired<TKey, TValue, TComparer>.Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        {
+            Sort(keys, values, comparer);
+        }
+    }
+
+    internal sealed partial class GenericArraySortHelperPaired<TKey, TValue>
+        : IArraySortHelperPaired<TKey, TValue>
+    {
+        void IArraySortHelperPaired<TKey, TValue>.Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        {
+            Sort(keys, values, comparer);
+        }
+    }
+
+    internal sealed partial class GenericArraySortHelperPaired<TKey, TValue, TComparer>
+        : IArraySortHelperPaired<TKey, TValue, TComparer>
+    {
+        void IArraySortHelperPaired<TKey, TValue, TComparer>.Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        {
+            Sort(keys, values, comparer);
+        }
     }
 }

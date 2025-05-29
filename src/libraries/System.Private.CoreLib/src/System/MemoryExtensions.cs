@@ -4313,7 +4313,7 @@ namespace System
         {
             if (span.Length > 1)
             {
-                ArraySortHelperSpecialization<T, TComparer>.Default.Sort(span, comparer);
+                ArraySortHelper<T, TComparer>.Default.Sort(span, comparer);
             }
         }
 
@@ -4380,7 +4380,7 @@ namespace System
 
             if (keys.Length > 1)
             {
-                ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, comparer); // value-type comparer will be boxed
+                ArraySortHelperPaired<TKey, TValue, TComparer>.Default.Sort(keys, items, comparer);
             }
         }
 
@@ -4406,7 +4406,7 @@ namespace System
 
             if (keys.Length > 1)
             {
-                ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, new ComparisonComparer<TKey>(comparison));
+                ArraySortHelperPaired<TKey, TValue>.Default.Sort(keys, items, new ComparisonComparer<TKey>(comparison));
             }
         }
 

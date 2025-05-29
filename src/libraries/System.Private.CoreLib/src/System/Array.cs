@@ -2183,7 +2183,7 @@ namespace System
 
                 var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(keys), index), length);
                 var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(items), index), length);
-                ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
+                ArraySortHelperPaired<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
             }
         }
 
