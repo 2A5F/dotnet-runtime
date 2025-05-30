@@ -69,7 +69,7 @@ namespace System.Collections.Generic
     }
 
     internal sealed partial class GenericArraySortHelperPaired<TKey, TValue>
-		: IArraySortHelperPaired<TKey, TValue>
+        : IArraySortHelperPaired<TKey, TValue>
     {
     }
 }
