@@ -40,16 +40,6 @@ namespace System.Collections.Generic
             }
             return defaultArraySortHelper;
         }
-
-        void IArraySortHelper<T>.Sort(Span<T> keys, IComparer<T>? comparer)
-        {
-            ArraySortHelper<T, IComparer<T>?>.Sort(keys, comparer);
-        }
-
-        int IArraySortHelper<T>.BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
-        {
-            return ArraySortHelper<T, IComparer<T>?>.BinarySearch(array, index, length, value, comparer);
-        }
     }
 
     internal sealed partial class ArraySortHelper<T, TComparer>
@@ -74,29 +64,11 @@ namespace System.Collections.Generic
             }
             return defaultArraySortHelper;
         }
-
-        void IArraySortHelper<T, TComparer>.Sort(Span<T> keys, TComparer comparer)
-        {
-            Sort(keys, comparer);
-        }
-        int IArraySortHelper<T, TComparer>.BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
-        {
-            return BinarySearch(array, index, length, value, comparer);
-        }
     }
 
     internal sealed partial class GenericArraySortHelper<T>
         : IArraySortHelper<T>
     {
-        void IArraySortHelper<T>.Sort(Span<T> keys, IComparer<T>? comparer)
-        {
-            Sort(keys, comparer);
-        }
-
-        int IArraySortHelper<T>.BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
-        {
-            return BinarySearch(array, index, length, value, comparer);
-        }
     }
 
     internal sealed partial class GenericArraySortHelper<T, TComparer>
@@ -104,15 +76,6 @@ namespace System.Collections.Generic
         where TComparer : IComparer<T>?
         where T : IComparable<T>
     {
-        void IArraySortHelper<T, TComparer>.Sort(Span<T> keys, TComparer comparer)
-        {
-            Sort(keys, comparer);
-        }
-
-        int IArraySortHelper<T, TComparer>.BinarySearch(T[] keys, int index, int length, T value, TComparer comparer)
-        {
-            return BinarySearch(keys, index, length, value, comparer);
-        }
     }
 
     internal interface IArraySortHelperPaired<TKey, TValue>
@@ -147,11 +110,6 @@ namespace System.Collections.Generic
             }
             return defaultArraySortHelper;
         }
-
-        void IArraySortHelperPaired<TKey, TValue>.Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
-        {
-            Sort(keys, values, comparer);
-        }
     }
 
     internal sealed partial class ArraySortHelperPaired<TKey, TValue, TComparer>
@@ -176,28 +134,15 @@ namespace System.Collections.Generic
             }
             return defaultArraySortHelper;
         }
-
-        void IArraySortHelperPaired<TKey, TValue, TComparer>.Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-        {
-            Sort(keys, values, comparer);
-        }
     }
 
     internal sealed partial class GenericArraySortHelperPaired<TKey, TValue>
         : IArraySortHelperPaired<TKey, TValue>
     {
-        void IArraySortHelperPaired<TKey, TValue>.Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
-        {
-            Sort(keys, values, comparer);
-        }
     }
 
     internal sealed partial class GenericArraySortHelperPaired<TKey, TValue, TComparer>
         : IArraySortHelperPaired<TKey, TValue, TComparer>
     {
-        void IArraySortHelperPaired<TKey, TValue, TComparer>.Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-        {
-            Sort(keys, values, comparer);
-        }
     }
 }

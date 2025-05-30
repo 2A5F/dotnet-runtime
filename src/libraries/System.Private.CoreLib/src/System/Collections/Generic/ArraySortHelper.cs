@@ -26,26 +26,44 @@ namespace System.Collections.Generic
 
     internal sealed partial class ArraySortHelper<T>
     {
-        internal static void Sort(Span<T> keys, IComparer<T>? comparer)
+        #region IArraySortHelper<T> Members
+
+        public void Sort(Span<T> keys, IComparer<T>? comparer)
         {
-            ArraySortHelper<T, IComparer<T>?>.Sort(keys, comparer);
+            ArraySortHelper<T, IComparer<T>?>.SortImpl(keys, comparer);
         }
 
-        internal static int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
+        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
-            return ArraySortHelper<T, IComparer<T>?>.BinarySearch(array, index, length, value, comparer);
+            return ArraySortHelper<T, IComparer<T>?>.BinarySearchImpl(array, index, length, value, comparer);
         }
+
+        #endregion
 
         internal static void Sort(Span<T> keys, Comparison<T> comparer)
         {
-            ArraySortHelper<T, ValueComparisonComparer<T>>.Sort(keys, new(comparer));
+            ArraySortHelper<T, ValueComparisonComparer<T>>.SortImpl(keys, new(comparer));
         }
     }
 
     internal sealed partial class ArraySortHelper<T, TComparer>
         where TComparer : IComparer<T>?
     {
-        internal static void Sort(Span<T> keys, TComparer comparer)
+        #region IArraySortHelper<T, TComparer> Members
+
+        public void Sort(Span<T> keys, TComparer comparer)
+        {
+            SortImpl(keys, comparer);
+        }
+
+        public int BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
+        {
+            return BinarySearchImpl(array, index, length, value, comparer);
+        }
+
+        #endregion
+
+        internal static void SortImpl(Span<T> keys, TComparer comparer)
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -71,7 +89,7 @@ namespace System.Collections.Generic
             }
         }
 
-        internal static int BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
+        internal static int BinarySearchImpl(T[] array, int index, int length, T value, TComparer comparer)
         {
             try
             {
@@ -300,15 +318,19 @@ namespace System.Collections.Generic
     {
         // Do not add a constructor to this class because ArraySortHelper<T>.CreateSortHelper will not execute it
 
-        internal static void Sort(Span<T> keys, IComparer<T>? comparer)
+        #region IArraySortHelper<TKey> Members
+
+        public void Sort(Span<T> keys, IComparer<T>? comparer)
         {
-            GenericArraySortHelper<T, IComparer<T>?>.Sort(keys, comparer);
+            GenericArraySortHelper<T, IComparer<T>?>.SortImpl(keys, comparer);
         }
 
-        internal static int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
+        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
-            return GenericArraySortHelper<T, IComparer<T>?>.BinarySearch(array, index, length, value, comparer);
+            return GenericArraySortHelper<T, IComparer<T>?>.BinarySearchImpl(array, index, length, value, comparer);
         }
+
+        #endregion
     }
 
     internal sealed partial class GenericArraySortHelper<T, TComparer>
@@ -317,7 +339,21 @@ namespace System.Collections.Generic
     {
         // Do not add a constructor to this class because ArraySortHelper<T>.CreateSortHelper will not execute it
 
-        public static void Sort(Span<T> keys, TComparer comparer)
+        #region IArraySortHelper<T, TComparer> Members
+
+        public void Sort(Span<T> keys, TComparer comparer)
+        {
+            SortImpl(keys, comparer);
+        }
+
+        public int BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
+        {
+            return BinarySearchImpl(array, index, length, value, comparer);
+        }
+
+        #endregion
+
+        internal static void SortImpl(Span<T> keys, TComparer comparer)
         {
             try
             {
@@ -358,7 +394,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public static int BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
+        internal static int BinarySearchImpl(T[] array, int index, int length, T value, TComparer comparer)
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
@@ -647,16 +683,29 @@ namespace System.Collections.Generic
 
     internal sealed partial class ArraySortHelperPaired<TKey, TValue>
     {
-        internal static void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        #region IArraySortHelperPaired<TKey, TValue> Members
+
+        public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
         {
-            ArraySortHelperPaired<TKey, TValue, IComparer<TKey>?>.Sort(keys, values, comparer);
+            ArraySortHelperPaired<TKey, TValue, IComparer<TKey>?>.SortImpl(keys, values, comparer);
         }
+
+        #endregion
     }
 
     internal sealed partial class ArraySortHelperPaired<TKey, TValue, TComparer>
         where TComparer : IComparer<TKey>?
     {
-        internal static void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        #region IArraySortHelperPaired<TKey, TValue, TComparer> Members
+
+        public void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        {
+            SortImpl(keys, values, comparer);
+        }
+
+        #endregion
+
+        internal static void SortImpl(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -881,17 +930,30 @@ namespace System.Collections.Generic
     internal sealed partial class GenericArraySortHelperPaired<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        internal static void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        #region IArraySortHelperPaired<TKey, TValue> Members
+
+        public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
         {
-            GenericArraySortHelperPaired<TKey, TValue, IComparer<TKey>?>.Sort(keys, values, comparer);
+            GenericArraySortHelperPaired<TKey, TValue, IComparer<TKey>?>.SortImpl(keys, values, comparer);
         }
+
+        #endregion
     }
 
     internal sealed partial class GenericArraySortHelperPaired<TKey, TValue, TComparer>
         where TKey : IComparable<TKey>
         where TComparer : IComparer<TKey>?
     {
-        internal static void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        #region IArraySortHelperPaired<TKey, TValue, TComparer> Members
+
+        public void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        {
+            SortImpl(keys, values, comparer);
+        }
+
+        #endregion
+
+        internal static void SortImpl(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
