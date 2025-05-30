@@ -764,6 +764,11 @@ namespace System.Collections.Generic
             values[j] = v;
         }
 
+        internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        {
+            IntrospectiveSort(keys, values, ref comparer);
+        }
+
         internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, ref TComparer comparer)
         {
             Debug.Assert(comparer != null);
