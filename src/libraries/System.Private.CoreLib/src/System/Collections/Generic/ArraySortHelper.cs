@@ -44,7 +44,20 @@ namespace System.Collections.Generic
 
         internal static void Sort(Span<T> keys)
         {
-            Default.SortFallback(keys);
+            // Add a try block here to detect IComparers (or their
+            // underlying IComparables, etc) that are bogus.
+            try
+            {
+                Default.SortFallback(keys);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(null);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
         }
 
         internal static void Sort(Span<T> keys, Comparison<T> comparer)
@@ -655,7 +668,20 @@ namespace System.Collections.Generic
 
         internal static void Sort(Span<TKey> keys, Span<TValue> values)
         {
-            Default.SortFallBack(keys, values);
+            // Add a try block here to detect IComparers (or their
+            // underlying IComparables, etc) that are bogus.
+            try
+            {
+                Default.SortFallBack(keys, values);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(null);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
         }
 
         internal static void Sort(Span<TKey> keys, Span<TValue> values, Comparison<TKey> comparer)
