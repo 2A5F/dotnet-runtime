@@ -28,56 +28,88 @@ namespace System.Collections.Generic
     {
         #region IArraySortHelper<T> Members
 
-        public void Sort(Span<T> keys, IComparer<T>? comparer)
+        public void SortFallback(Span<T> keys)
         {
-            ArraySortHelper<T, IComparer<T>?>.SortImpl(keys, comparer);
+            Comparer<T> defaultComparer = Comparer<T>.Default;
+            ArraySortHelper<T, Comparer<T>>.IntrospectiveSort(keys, ref defaultComparer);
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
+        public int BinarySearchFallback(T[] array, int index, int length, T value)
         {
-            return ArraySortHelper<T, IComparer<T>?>.BinarySearchImpl(array, index, length, value, comparer);
+            Comparer<T> defaultComparer = Comparer<T>.Default;
+            return ArraySortHelper<T, Comparer<T>>.InternalBinarySearch(array, index, length, value, ref defaultComparer);
         }
 
         #endregion
+
+        internal static void Sort(Span<T> keys)
+        {
+            Default.SortFallback(keys);
+        }
 
         internal static void Sort(Span<T> keys, Comparison<T> comparer)
         {
-            ArraySortHelper<T, ValueComparisonComparer<T>>.SortImpl(keys, new(comparer));
-        }
-    }
-
-    internal sealed partial class ArraySortHelper<T, TComparer>
-        where TComparer : IComparer<T>?
-    {
-        #region IArraySortHelper<T, TComparer> Members
-
-        public void Sort(Span<T> keys, TComparer comparer)
-        {
-            SortImpl(keys, comparer);
+            ArraySortHelper<T, ValueComparisonComparer<T>>.Sort(keys, new(comparer));
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
-        {
-            return BinarySearchImpl(array, index, length, value, comparer);
-        }
-
-        #endregion
-
-        internal static void SortImpl(Span<T> keys, TComparer comparer)
+        internal static void Sort<TComparer>(Span<T> keys, TComparer? comparer)
+            where TComparer : IComparer<T>
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (typeof(TComparer).IsClass && comparer is null)
+                if (comparer == null)
                 {
-                    Comparer<T> defaultComparer = Comparer<T>.Default;
-                    ArraySortHelper<T, Comparer<T>>.IntrospectiveSort(keys, ref defaultComparer);
+                    Default.SortFallback(keys);
                 }
                 else
                 {
-                    IntrospectiveSort(keys, ref comparer!);
+                    ArraySortHelper<T, TComparer>.IntrospectiveSort(keys, ref comparer);
                 }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
+        }
+
+        internal static int BinarySearch<TComparer>(T[] array, int index, int length, T value, TComparer? comparer)
+            where TComparer : IComparer<T>
+        {
+            try
+            {
+                if (comparer == null)
+                {
+                    return Default.BinarySearchFallback(array, index, length, value);
+                }
+                else
+                {
+                    return ArraySortHelper<T, TComparer>.InternalBinarySearch(array, index, length, value, ref comparer);
+                }
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+                return 0;
+            }
+        }
+    }
+
+    internal static class ArraySortHelper<T, TComparer>
+        where TComparer : IComparer<T>
+    {
+        internal static void Sort(Span<T> keys, TComparer comparer)
+        {
+            // Add a try block here to detect IComparers (or their
+            // underlying IComparables, etc) that are bogus.
+            try
+            {
+                IntrospectiveSort(keys, ref comparer);
             }
             catch (IndexOutOfRangeException)
             {
@@ -93,15 +125,7 @@ namespace System.Collections.Generic
         {
             try
             {
-                if (typeof(TComparer).IsClass && comparer == null!)
-                {
-                    Comparer<T> defaultComparer = Comparer<T>.Default;
-                    return ArraySortHelper<T, Comparer<T>>.InternalBinarySearch(array, index, length, value, ref defaultComparer);
-                }
-                else
-                {
-                    return InternalBinarySearch(array, index, length, value, ref comparer!);
-                }
+                return InternalBinarySearch(array, index, length, value, ref comparer);
             }
             catch (Exception e)
             {
@@ -114,7 +138,6 @@ namespace System.Collections.Generic
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
-            Debug.Assert(comparer != null, "Check the arguments in the caller!");
 
             int lo = index;
             int hi = index + length - 1;
@@ -235,7 +258,6 @@ namespace System.Collections.Generic
 
             while (left < right)
             {
-                Debug.Assert(comparer != null);
                 while (comparer.Compare(keys[++left], pivot) < 0) ;
                 while (comparer.Compare(pivot, keys[--right]) < 0) ;
 
@@ -320,100 +342,38 @@ namespace System.Collections.Generic
 
         #region IArraySortHelper<TKey> Members
 
-        public void Sort(Span<T> keys, IComparer<T>? comparer)
+        public void SortFallback(Span<T> keys)
         {
-            GenericArraySortHelper<T, IComparer<T>?>.SortImpl(keys, comparer);
+            Sort(keys);
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
+        public int BinarySearchFallback(T[] array, int index, int length, T value)
         {
-            return GenericArraySortHelper<T, IComparer<T>?>.BinarySearchImpl(array, index, length, value, comparer);
-        }
-
-        #endregion
-    }
-
-    internal sealed partial class GenericArraySortHelper<T, TComparer>
-        where TComparer : IComparer<T>?
-        where T : IComparable<T>
-    {
-        // Do not add a constructor to this class because ArraySortHelper<T>.CreateSortHelper will not execute it
-
-        #region IArraySortHelper<T, TComparer> Members
-
-        public void Sort(Span<T> keys, TComparer comparer)
-        {
-            SortImpl(keys, comparer);
-        }
-
-        public int BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
-        {
-            return BinarySearchImpl(array, index, length, value, comparer);
+            return BinarySearch(array, index, length, value);
         }
 
         #endregion
 
-        internal static void SortImpl(Span<T> keys, TComparer comparer)
+        private static void Sort(Span<T> keys)
         {
-            try
+            if (keys.Length > 1)
             {
-                if (comparer == null || (comparer is Comparer<T> c && c == Comparer<T>.Default))
+                // For floating-point, do a pre-pass to move all NaNs to the beginning
+                // so that we can do an optimized comparison as part of the actual sort
+                // on the remainder of the values.
+                if (typeof(T) == typeof(double) ||
+                    typeof(T) == typeof(float) ||
+                    typeof(T) == typeof(Half))
                 {
-                    if (keys.Length > 1)
+                    int nanLeft = SortUtils.MoveNansToFront(keys, default(Span<byte>));
+                    if (nanLeft == keys.Length)
                     {
-                        // For floating-point, do a pre-pass to move all NaNs to the beginning
-                        // so that we can do an optimized comparison as part of the actual sort
-                        // on the remainder of the values.
-                        if (typeof(T) == typeof(double) ||
-                            typeof(T) == typeof(float) ||
-                            typeof(T) == typeof(Half))
-                        {
-                            int nanLeft = SortUtils.MoveNansToFront(keys, default(Span<byte>));
-                            if (nanLeft == keys.Length)
-                            {
-                                return;
-                            }
-                            keys = keys.Slice(nanLeft);
-                        }
-
-                        IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+                        return;
                     }
+                    keys = keys.Slice(nanLeft);
                 }
-                else
-                {
-                    ArraySortHelper<T, TComparer>.IntrospectiveSort(keys, ref comparer);
-                }
-            }
-            catch (IndexOutOfRangeException)
-            {
-                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-            }
-        }
 
-        internal static int BinarySearchImpl(T[] array, int index, int length, T value, TComparer comparer)
-        {
-            Debug.Assert(array != null, "Check the arguments in the caller!");
-            Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
-
-            try
-            {
-                if (comparer == null || (comparer is Comparer<T> c && c == Comparer<T>.Default))
-                {
-                    return BinarySearch(array, index, length, value);
-                }
-                else
-                {
-                    return ArraySortHelper<T, TComparer>.InternalBinarySearch(array, index, length, value, ref comparer);
-                }
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                return 0;
+                IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
             }
         }
 
@@ -685,41 +645,61 @@ namespace System.Collections.Generic
     {
         #region IArraySortHelperPaired<TKey, TValue> Members
 
-        public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        public void SortFallBack(Span<TKey> keys, Span<TValue> values)
         {
-            ArraySortHelperPaired<TKey, TValue, IComparer<TKey>?>.SortImpl(keys, values, comparer);
-        }
-
-        #endregion
-    }
-
-    internal sealed partial class ArraySortHelperPaired<TKey, TValue, TComparer>
-        where TComparer : IComparer<TKey>?
-    {
-        #region IArraySortHelperPaired<TKey, TValue, TComparer> Members
-
-        public void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-        {
-            SortImpl(keys, values, comparer);
+            Comparer<TKey> defaultComparer = Comparer<TKey>.Default;
+            ArraySortHelperPaired<TKey, TValue, Comparer<TKey>>.IntrospectiveSort(keys, values, ref defaultComparer);
         }
 
         #endregion
 
-        internal static void SortImpl(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        internal static void Sort(Span<TKey> keys, Span<TValue> values)
+        {
+            Default.SortFallBack(keys, values);
+        }
+
+        internal static void Sort(Span<TKey> keys, Span<TValue> values, Comparison<TKey> comparer)
+        {
+            ArraySortHelperPaired<TKey, TValue, ValueComparisonComparer<TKey>>.Sort(keys, values, new(comparer));
+        }
+
+        internal static void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer? comparer)
+            where TComparer : IComparer<TKey>
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (typeof(TComparer).IsClass && comparer == null)
+                if (comparer == null)
                 {
-                    Comparer<TKey> defaultComparer = Comparer<TKey>.Default;
-                    ArraySortHelperPaired<TKey, TValue, Comparer<TKey>>.IntrospectiveSort(keys, values, ref defaultComparer);
+                    Default.SortFallBack(keys, values);
                 }
                 else
                 {
-                    IntrospectiveSort(keys, values, ref comparer);
+                    ArraySortHelperPaired<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, ref comparer);
                 }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
+        }
+    }
+
+    internal static class ArraySortHelperPaired<TKey, TValue, TComparer>
+        where TComparer : IComparer<TKey>
+    {
+        internal static void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        {
+            // Add a try block here to detect IComparers (or their
+            // underlying IComparables, etc) that are bogus.
+            try
+            {
+                IntrospectiveSort(keys, values, ref comparer);
             }
             catch (IndexOutOfRangeException)
             {
@@ -937,68 +917,34 @@ namespace System.Collections.Generic
     {
         #region IArraySortHelperPaired<TKey, TValue> Members
 
-        public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        public void SortFallBack(Span<TKey> keys, Span<TValue> values)
         {
-            GenericArraySortHelperPaired<TKey, TValue, IComparer<TKey>?>.SortImpl(keys, values, comparer);
-        }
-
-        #endregion
-    }
-
-    internal sealed partial class GenericArraySortHelperPaired<TKey, TValue, TComparer>
-        where TKey : IComparable<TKey>
-        where TComparer : IComparer<TKey>?
-    {
-        #region IArraySortHelperPaired<TKey, TValue, TComparer> Members
-
-        public void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-        {
-            SortImpl(keys, values, comparer);
+            Sort(keys, values);
         }
 
         #endregion
 
-        internal static void SortImpl(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        private static void Sort(Span<TKey> keys, Span<TValue> values)
         {
-            // Add a try block here to detect IComparers (or their
-            // underlying IComparables, etc) that are bogus.
-            try
+            if (keys.Length > 1)
             {
-                if (typeof(TComparer).IsClass && (comparer == null || (comparer is Comparer<TKey> c && c == Comparer<TKey>.Default)))
+                // For floating-point, do a pre-pass to move all NaNs to the beginning
+                // so that we can do an optimized comparison as part of the actual sort
+                // on the remainder of the values.
+                if (typeof(TKey) == typeof(double) ||
+                    typeof(TKey) == typeof(float) ||
+                    typeof(TKey) == typeof(Half))
                 {
-                    if (keys.Length > 1)
+                    int nanLeft = SortUtils.MoveNansToFront(keys, values);
+                    if (nanLeft == keys.Length)
                     {
-                        // For floating-point, do a pre-pass to move all NaNs to the beginning
-                        // so that we can do an optimized comparison as part of the actual sort
-                        // on the remainder of the values.
-                        if (typeof(TKey) == typeof(double) ||
-                            typeof(TKey) == typeof(float) ||
-                            typeof(TKey) == typeof(Half))
-                        {
-                            int nanLeft = SortUtils.MoveNansToFront(keys, values);
-                            if (nanLeft == keys.Length)
-                            {
-                                return;
-                            }
-                            keys = keys.Slice(nanLeft);
-                            values = values.Slice(nanLeft);
-                        }
-
-                        IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+                        return;
                     }
+                    keys = keys.Slice(nanLeft);
+                    values = values.Slice(nanLeft);
                 }
-                else
-                {
-                    ArraySortHelperPaired<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, ref comparer);
-                }
-            }
-            catch (IndexOutOfRangeException)
-            {
-                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+
+                IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
             }
         }
 

@@ -8,15 +8,8 @@ namespace System.Collections.Generic
 {
     internal interface IArraySortHelper<TKey>
     {
-        void Sort(Span<TKey> keys, IComparer<TKey>? comparer);
-        int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey>? comparer);
-    }
-
-    internal interface IArraySortHelper<TKey, TComparer>
-        where TComparer : IComparer<TKey>?, allows ref struct
-    {
-        void Sort(Span<TKey> keys, TComparer comparer);
-        int BinarySearch(TKey[] keys, int index, int length, TKey value, TComparer comparer);
+        void SortFallback(Span<TKey> keys);
+        int BinarySearchFallback(TKey[] keys, int index, int length, TKey value);
     }
 
     internal sealed partial class ArraySortHelper<T>
@@ -42,51 +35,14 @@ namespace System.Collections.Generic
         }
     }
 
-    internal sealed partial class ArraySortHelper<T, TComparer>
-        : IArraySortHelper<T, TComparer>
-        where TComparer : IComparer<T>?
-    {
-        private static readonly IArraySortHelper<T, TComparer> s_defaultArraySortHelper = CreateArraySortHelper();
-
-        public static IArraySortHelper<T, TComparer> Default => s_defaultArraySortHelper;
-
-        private static IArraySortHelper<T, TComparer> CreateArraySortHelper()
-        {
-            IArraySortHelper<T, TComparer> defaultArraySortHelper;
-
-            if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)))
-            {
-                defaultArraySortHelper = (IArraySortHelper<T, TComparer>)RuntimeType.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelper<string, IComparer<string>>), (RuntimeType)typeof(T), (RuntimeType)typeof(TComparer));
-            }
-            else
-            {
-                defaultArraySortHelper = new ArraySortHelper<T, TComparer>();
-            }
-            return defaultArraySortHelper;
-        }
-    }
-
     internal sealed partial class GenericArraySortHelper<T>
         : IArraySortHelper<T>
     {
     }
 
-    internal sealed partial class GenericArraySortHelper<T, TComparer>
-        : IArraySortHelper<T, TComparer>
-        where TComparer : IComparer<T>?
-        where T : IComparable<T>
-    {
-    }
-
     internal interface IArraySortHelperPaired<TKey, TValue>
     {
-        void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer);
-    }
-
-    internal interface IArraySortHelperPaired<TKey, TValue, TComparer>
-        where TComparer : IComparer<TKey>?, allows ref struct
-    {
-        void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer);
+        void SortFallBack(Span<TKey> keys, Span<TValue> values);
     }
 
     internal sealed partial class ArraySortHelperPaired<TKey, TValue>
@@ -112,37 +68,7 @@ namespace System.Collections.Generic
         }
     }
 
-    internal sealed partial class ArraySortHelperPaired<TKey, TValue, TComparer>
-        : IArraySortHelperPaired<TKey, TValue, TComparer>
-        where TComparer : IComparer<TKey>?
-    {
-        private static readonly IArraySortHelperPaired<TKey, TValue, TComparer> s_defaultArraySortHelper = CreateArraySortHelper();
-
-        public static IArraySortHelperPaired<TKey, TValue, TComparer> Default => s_defaultArraySortHelper;
-
-        private static IArraySortHelperPaired<TKey, TValue, TComparer> CreateArraySortHelper()
-        {
-            IArraySortHelperPaired<TKey, TValue, TComparer> defaultArraySortHelper;
-
-            if (typeof(IComparable<TKey>).IsAssignableFrom(typeof(TKey)))
-            {
-                defaultArraySortHelper = (IArraySortHelperPaired<TKey, TValue, TComparer>)RuntimeType.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelperPaired<string, string, IComparer<string>>), (RuntimeType)typeof(TKey), (RuntimeType)typeof(TValue), (RuntimeType)typeof(TComparer));
-            }
-            else
-            {
-                defaultArraySortHelper = new ArraySortHelperPaired<TKey, TValue, TComparer>();
-            }
-            return defaultArraySortHelper;
-        }
-    }
-
     internal sealed partial class GenericArraySortHelperPaired<TKey, TValue>
-        : IArraySortHelperPaired<TKey, TValue>
-    {
-    }
-
-    internal sealed partial class GenericArraySortHelperPaired<TKey, TValue, TComparer>
-        : IArraySortHelperPaired<TKey, TValue, TComparer>
     {
     }
 }

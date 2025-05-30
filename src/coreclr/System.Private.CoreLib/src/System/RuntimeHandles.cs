@@ -274,40 +274,6 @@ namespace System
             return instantiatedObject!;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
-            Justification = "The parameter 'type' is passed by ref to QCallTypeHandle which only instantiates" +
-                            "the type using the public parameterless constructor and doesn't modify it")]
-        internal static object CreateInstanceForAnotherGenericParameter(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
-            RuntimeType genericParameter1,
-            RuntimeType genericParameter2,
-            RuntimeType genericParameter3)
-        {
-            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
-                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
-
-            object? instantiatedObject = null;
-
-            IntPtr* pTypeHandles = stackalloc IntPtr[]
-            {
-                genericParameter1.TypeHandle.Value,
-                genericParameter2.TypeHandle.Value,
-                genericParameter3.TypeHandle.Value
-            };
-
-            CreateInstanceForAnotherGenericParameter(
-                new QCallTypeHandle(ref type),
-                pTypeHandles,
-                2,
-                ObjectHandleOnStack.Create(ref instantiatedObject));
-
-            GC.KeepAlive(genericParameter1);
-            GC.KeepAlive(genericParameter2);
-            GC.KeepAlive(genericParameter3);
-
-            return instantiatedObject!;
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter")]
         private static partial void CreateInstanceForAnotherGenericParameter(
             QCallTypeHandle baseType,
