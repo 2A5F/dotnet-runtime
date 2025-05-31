@@ -13,12 +13,14 @@ namespace System.Collections.Generic
     internal readonly struct ValueComparisonComparer<T>(Comparison<T> comparer) : IComparer<T>
         where T : allows ref struct
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(T? x, T? y) => comparer(x!, y!);
     }
 
     internal readonly struct ValueComparableComparer<T> : IComparer<T>
         where T : IComparable<T>, allows ref struct
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(T? x, T? y) => x!.CompareTo(y);
     }
 
@@ -30,14 +32,12 @@ namespace System.Collections.Generic
 
         public void SortFallback(Span<T> keys)
         {
-            Comparer<T> defaultComparer = Comparer<T>.Default;
-            ArraySortHelper<T, Comparer<T>>.IntrospectiveSort(keys, ref defaultComparer);
+            ArraySortHelper<T, Comparer<T>>.IntrospectiveSort(keys, Comparer<T>.Default);
         }
 
         public int BinarySearchFallback(T[] array, int index, int length, T value)
         {
-            Comparer<T> defaultComparer = Comparer<T>.Default;
-            return ArraySortHelper<T, Comparer<T>>.InternalBinarySearch(array, index, length, value, ref defaultComparer);
+            return ArraySortHelper<T, Comparer<T>>.InternalBinarySearch(array, index, length, value, Comparer<T>.Default);
         }
 
         #endregion
@@ -78,7 +78,7 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    ArraySortHelper<T, TComparer>.IntrospectiveSort(keys, ref comparer);
+                    ArraySortHelper<T, TComparer>.IntrospectiveSort(keys, comparer);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -102,7 +102,7 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    return ArraySortHelper<T, TComparer>.InternalBinarySearch(array, index, length, value, ref comparer);
+                    return ArraySortHelper<T, TComparer>.InternalBinarySearch(array, index, length, value, comparer);
                 }
             }
             catch (Exception e)
@@ -122,7 +122,7 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                IntrospectiveSort(keys, ref comparer);
+                IntrospectiveSort(keys, comparer);
             }
             catch (IndexOutOfRangeException)
             {
@@ -138,7 +138,7 @@ namespace System.Collections.Generic
         {
             try
             {
-                return InternalBinarySearch(array, index, length, value, ref comparer);
+                return InternalBinarySearch(array, index, length, value, comparer);
             }
             catch (Exception e)
             {
@@ -147,7 +147,7 @@ namespace System.Collections.Generic
             }
         }
 
-        internal static int InternalBinarySearch(T[] array, int index, int length, T value, ref TComparer comparer)
+        internal static int InternalBinarySearch(T[] array, int index, int length, T value, TComparer comparer)
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
@@ -173,7 +173,7 @@ namespace System.Collections.Generic
             return ~lo;
         }
 
-        private static void SwapIfGreater(Span<T> keys, ref TComparer comparer, int i, int j)
+        private static void SwapIfGreater(Span<T> keys, TComparer comparer, int i, int j)
         {
             Debug.Assert(i != j);
             Debug.Assert(comparer != null);
@@ -196,18 +196,18 @@ namespace System.Collections.Generic
             a[j] = t;
         }
 
-        internal static void IntrospectiveSort(Span<T> keys, ref TComparer comparer)
+        internal static void IntrospectiveSort(Span<T> keys, TComparer comparer)
         {
             if (keys.Length > 1)
             {
-                IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1), ref comparer);
+                IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1), comparer);
             }
         }
 
         // IntroSort is recursive; block it from being inlined into itself as
         // this is currenly not profitable.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void IntroSort(Span<T> keys, int depthLimit, ref TComparer comparer)
+        private static void IntroSort(Span<T> keys, int depthLimit, TComparer comparer)
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(depthLimit >= 0);
@@ -220,38 +220,38 @@ namespace System.Collections.Generic
 
                     if (partitionSize == 2)
                     {
-                        SwapIfGreater(keys, ref comparer, 0, 1);
+                        SwapIfGreater(keys, comparer, 0, 1);
                         return;
                     }
 
                     if (partitionSize == 3)
                     {
-                        SwapIfGreater(keys, ref comparer, 0, 1);
-                        SwapIfGreater(keys, ref comparer, 0, 2);
-                        SwapIfGreater(keys, ref comparer, 1, 2);
+                        SwapIfGreater(keys, comparer, 0, 1);
+                        SwapIfGreater(keys, comparer, 0, 2);
+                        SwapIfGreater(keys, comparer, 1, 2);
                         return;
                     }
 
-                    InsertionSort(keys.Slice(0, partitionSize), ref comparer);
+                    InsertionSort(keys.Slice(0, partitionSize), comparer);
                     return;
                 }
 
                 if (depthLimit == 0)
                 {
-                    HeapSort(keys.Slice(0, partitionSize), ref comparer);
+                    HeapSort(keys.Slice(0, partitionSize), comparer);
                     return;
                 }
                 depthLimit--;
 
-                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), ref comparer);
+                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), comparer);
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p + 1)..partitionSize], depthLimit, ref comparer);
+                IntroSort(keys[(p + 1)..partitionSize], depthLimit, comparer);
                 partitionSize = p;
             }
         }
 
-        private static int PickPivotAndPartition(Span<T> keys, ref TComparer comparer)
+        private static int PickPivotAndPartition(Span<T> keys, TComparer comparer)
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
 
@@ -261,9 +261,9 @@ namespace System.Collections.Generic
             int middle = hi >> 1;
 
             // Sort lo, mid and hi appropriately, then pick mid as the pivot.
-            SwapIfGreater(keys, ref comparer, 0, middle);  // swap the low with the mid point
-            SwapIfGreater(keys, ref comparer, 0, hi);   // swap the low with the high
-            SwapIfGreater(keys, ref comparer, middle, hi); // swap the middle with the high
+            SwapIfGreater(keys, comparer, 0, middle);  // swap the low with the mid point
+            SwapIfGreater(keys, comparer, 0, hi);   // swap the low with the high
+            SwapIfGreater(keys, comparer, middle, hi); // swap the middle with the high
 
             T pivot = keys[middle];
             Swap(keys, middle, hi - 1);
@@ -288,24 +288,24 @@ namespace System.Collections.Generic
             return left;
         }
 
-        private static void HeapSort(Span<T> keys, ref TComparer comparer)
+        private static void HeapSort(Span<T> keys, TComparer comparer)
         {
             Debug.Assert(!keys.IsEmpty);
 
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
             {
-                DownHeap(keys, i, n, ref comparer);
+                DownHeap(keys, i, n, comparer);
             }
 
             for (int i = n; i > 1; i--)
             {
                 Swap(keys, 0, i - 1);
-                DownHeap(keys, 1, i - 1, ref comparer);
+                DownHeap(keys, 1, i - 1, comparer);
             }
         }
 
-        private static void DownHeap(Span<T> keys, int i, int n, ref TComparer comparer)
+        private static void DownHeap(Span<T> keys, int i, int n, TComparer comparer)
         {
             Debug.Assert(comparer != null);
 
@@ -328,7 +328,7 @@ namespace System.Collections.Generic
             keys[i - 1] = d;
         }
 
-        private static void InsertionSort(Span<T> keys, ref TComparer comparer)
+        private static void InsertionSort(Span<T> keys, TComparer comparer)
         {
             Debug.Assert(comparer != null);
 
@@ -661,7 +661,7 @@ namespace System.Collections.Generic
         public void SortFallBack(Span<TKey> keys, Span<TValue> values)
         {
             Comparer<TKey> defaultComparer = Comparer<TKey>.Default;
-            ArraySortHelperPaired<TKey, TValue, Comparer<TKey>>.IntrospectiveSort(keys, values, ref defaultComparer);
+            ArraySortHelperPaired<TKey, TValue, Comparer<TKey>>.IntrospectiveSort(keys, values, defaultComparer);
         }
 
         #endregion
@@ -702,7 +702,7 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    ArraySortHelperPaired<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, ref comparer);
+                    ArraySortHelperPaired<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, comparer);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -725,7 +725,7 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                IntrospectiveSort(keys, values, ref comparer);
+                IntrospectiveSort(keys, values, comparer);
             }
             catch (IndexOutOfRangeException)
             {
@@ -772,21 +772,16 @@ namespace System.Collections.Generic
 
         internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
-            IntrospectiveSort(keys, values, ref comparer);
-        }
-
-        internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, ref TComparer comparer)
-        {
             Debug.Assert(comparer != null);
             Debug.Assert(keys.Length == values.Length);
 
             if (keys.Length > 1)
             {
-                IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1), ref comparer);
+                IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1), comparer);
             }
         }
 
-        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit, ref TComparer comparer)
+        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit, TComparer comparer)
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(values.Length == keys.Length);
@@ -813,26 +808,26 @@ namespace System.Collections.Generic
                         return;
                     }
 
-                    InsertionSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), ref comparer);
+                    InsertionSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
                     return;
                 }
 
                 if (depthLimit == 0)
                 {
-                    HeapSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), ref comparer);
+                    HeapSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
                     return;
                 }
                 depthLimit--;
 
-                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), ref comparer);
+                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p + 1)..partitionSize], values[(p + 1)..partitionSize], depthLimit, ref comparer);
+                IntroSort(keys[(p + 1)..partitionSize], values[(p + 1)..partitionSize], depthLimit, comparer);
                 partitionSize = p;
             }
         }
 
-        private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values, ref TComparer comparer)
+        private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
             Debug.Assert(comparer != null);
@@ -870,7 +865,7 @@ namespace System.Collections.Generic
             return left;
         }
 
-        private static void HeapSort(Span<TKey> keys, Span<TValue> values, ref TComparer comparer)
+        private static void HeapSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(comparer != null);
             Debug.Assert(!keys.IsEmpty);
@@ -878,17 +873,17 @@ namespace System.Collections.Generic
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
             {
-                DownHeap(keys, values, i, n, ref comparer);
+                DownHeap(keys, values, i, n, comparer);
             }
 
             for (int i = n; i > 1; i--)
             {
                 Swap(keys, values, 0, i - 1);
-                DownHeap(keys, values, 1, i - 1, ref comparer);
+                DownHeap(keys, values, 1, i - 1, comparer);
             }
         }
 
-        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, ref TComparer comparer)
+        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, TComparer comparer)
         {
             Debug.Assert(comparer != null);
 
@@ -915,7 +910,7 @@ namespace System.Collections.Generic
             values[i - 1] = dValue;
         }
 
-        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, ref TComparer comparer)
+        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(comparer != null);
 
