@@ -72,7 +72,7 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null)
+                if (comparer == null || (!typeof(TComparer).IsValueType && ReferenceEquals(comparer, Comparer<T>.Default)))
                 {
                     Default.SortFallback(keys);
                 }
@@ -96,7 +96,7 @@ namespace System.Collections.Generic
         {
             try
             {
-                if (comparer == null)
+                if (comparer == null || (!typeof(TComparer).IsValueType && ReferenceEquals(comparer, Comparer<T>.Default)))
                 {
                     return Default.BinarySearchFallback(array, index, length, value);
                 }
@@ -696,7 +696,7 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null)
+                if (comparer == null || (!typeof(TComparer).IsValueType && ReferenceEquals(comparer, Comparer<TKey>.Default)))
                 {
                     Default.SortFallBack(keys, values);
                 }
