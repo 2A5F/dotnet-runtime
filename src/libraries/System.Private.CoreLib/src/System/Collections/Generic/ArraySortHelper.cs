@@ -21,20 +21,6 @@ namespace System.Collections.Generic
 
     internal sealed partial class ArraySortHelper<T>
     {
-        #region IArraySortHelper<T> Members
-
-        public void SortFallback(Span<T> keys)
-        {
-            IntrospectiveSort(keys, Comparer<T>.Default);
-        }
-
-        public int BinarySearchFallback(T[] array, int index, int length, T value)
-        {
-            return InternalBinarySearch(array, index, length, value, Comparer<T>.Default);
-        }
-
-        #endregion
-
         internal static void Sort<TComparer>(Span<T> keys, TComparer? comparer)
             where TComparer : IComparer<T>
         {
@@ -295,20 +281,6 @@ namespace System.Collections.Generic
         where T : IComparable<T>
     {
         // Do not add a constructor to this class because ArraySortHelper<T>.CreateSortHelper will not execute it
-
-        #region IArraySortHelper<TKey> Members
-
-        public void SortFallback(Span<T> keys)
-        {
-            Sort(keys);
-        }
-
-        public int BinarySearchFallback(T[] array, int index, int length, T value)
-        {
-            return BinarySearch(array, index, length, value);
-        }
-
-        #endregion
 
         private static void Sort(Span<T> keys)
         {
@@ -599,15 +571,6 @@ namespace System.Collections.Generic
 
     internal sealed partial class ArraySortHelperPaired<TKey, TValue>
     {
-        #region IArraySortHelperPaired<TKey, TValue> Members
-
-        public void SortFallBack(Span<TKey> keys, Span<TValue> values)
-        {
-            IntrospectiveSort(keys, values, Comparer<TKey>.Default);
-        }
-
-        #endregion
-
         internal static void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer? comparer)
             where TComparer : IComparer<TKey>
         {
@@ -840,15 +803,6 @@ namespace System.Collections.Generic
     internal sealed partial class GenericArraySortHelperPaired<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        #region IArraySortHelperPaired<TKey, TValue> Members
-
-        public void SortFallBack(Span<TKey> keys, Span<TValue> values)
-        {
-            Sort(keys, values);
-        }
-
-        #endregion
-
         private static void Sort(Span<TKey> keys, Span<TValue> values)
         {
             if (keys.Length > 1)

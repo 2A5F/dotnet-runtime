@@ -20,6 +20,18 @@ namespace System.Collections.Generic
                 return s_defaultArraySortHelper;
             }
         }
+
+        #pragma warning disable CA1822
+        public void SortFallback(Span<T> keys)
+        {
+            IntrospectiveSort(keys, Comparer<T>.Default);
+        }
+
+        public int BinarySearchFallback(T[] array, int index, int length, T value)
+        {
+            return InternalBinarySearch(array, index, length, value, Comparer<T>.Default);
+        }
+        #pragma warning restore CA1822
     }
 
     internal partial class ArraySortHelperPaired<TKey, TValue>
@@ -33,5 +45,12 @@ namespace System.Collections.Generic
                 return s_defaultArraySortHelper;
             }
         }
+
+        #pragma warning disable CA1822
+        public void SortFallBack(Span<TKey> keys, Span<TValue> values)
+        {
+            IntrospectiveSort(keys, values, Comparer<TKey>.Default);
+        }
+        #pragma warning restore CA1822
     }
 }
