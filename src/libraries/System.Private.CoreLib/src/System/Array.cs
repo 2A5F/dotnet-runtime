@@ -2109,7 +2109,7 @@ namespace System
             if (array.Length > 1)
             {
                 var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-                ArraySortHelper<T>.Sort(span);
+                ArraySortHelper<T>.Sort(span, (IComparer<T>?)null);
             }
         }
 
@@ -2200,7 +2200,7 @@ namespace System
             }
 
             var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-            ArraySortHelper<T>.Sort(span, comparison);
+            ArraySortHelper<T>.Sort(span, new ValueComparisonComparer<T>(comparison));
         }
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match)

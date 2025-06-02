@@ -17,13 +17,6 @@ namespace System.Collections.Generic
         public int Compare(T? x, T? y) => comparer(x!, y!);
     }
 
-    internal readonly struct ValueComparableComparer<T> : IComparer<T>
-        where T : IComparable<T>, allows ref struct
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare(T? x, T? y) => x!.CompareTo(y);
-    }
-
     #region ArraySortHelper for single arrays
 
     internal sealed partial class ArraySortHelper<T>
@@ -32,38 +25,15 @@ namespace System.Collections.Generic
 
         public void SortFallback(Span<T> keys)
         {
-            ArraySortHelper<T, Comparer<T>>.IntrospectiveSort(keys, Comparer<T>.Default);
+            IntrospectiveSort(keys, Comparer<T>.Default);
         }
 
         public int BinarySearchFallback(T[] array, int index, int length, T value)
         {
-            return ArraySortHelper<T, Comparer<T>>.InternalBinarySearch(array, index, length, value, Comparer<T>.Default);
+            return InternalBinarySearch(array, index, length, value, Comparer<T>.Default);
         }
 
         #endregion
-
-        internal static void Sort(Span<T> keys)
-        {
-            // Add a try block here to detect IComparers (or their
-            // underlying IComparables, etc) that are bogus.
-            try
-            {
-                Default.SortFallback(keys);
-            }
-            catch (IndexOutOfRangeException)
-            {
-                ThrowHelper.ThrowArgumentException_BadComparer(null);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-            }
-        }
-
-        internal static void Sort(Span<T> keys, Comparison<T> comparer)
-        {
-            ArraySortHelper<T, ValueComparisonComparer<T>>.Sort(keys, new(comparer));
-        }
 
         internal static void Sort<TComparer>(Span<T> keys, TComparer? comparer)
             where TComparer : IComparer<T>
@@ -72,13 +42,13 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null || (!typeof(TComparer).IsValueType && ReferenceEquals(comparer, Comparer<T>.Default)))
+                if (!typeof(TComparer).IsValueType && (comparer == null || ReferenceEquals(comparer, Comparer<T>.Default)))
                 {
                     Default.SortFallback(keys);
                 }
                 else
                 {
-                    ArraySortHelper<T, TComparer>.IntrospectiveSort(keys, comparer);
+                    IntrospectiveSort(keys, comparer!);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -96,13 +66,13 @@ namespace System.Collections.Generic
         {
             try
             {
-                if (comparer == null || (!typeof(TComparer).IsValueType && ReferenceEquals(comparer, Comparer<T>.Default)))
+                if (!typeof(TComparer).IsValueType && (comparer == null || ReferenceEquals(comparer, Comparer<T>.Default)))
                 {
                     return Default.BinarySearchFallback(array, index, length, value);
                 }
                 else
                 {
-                    return ArraySortHelper<T, TComparer>.InternalBinarySearch(array, index, length, value, comparer);
+                    return InternalBinarySearch(array, index, length, value, comparer!);
                 }
             }
             catch (Exception e)
@@ -111,43 +81,9 @@ namespace System.Collections.Generic
                 return 0;
             }
         }
-    }
 
-    internal static class ArraySortHelper<T, TComparer>
-        where TComparer : IComparer<T>
-    {
-        internal static void Sort(Span<T> keys, TComparer comparer)
-        {
-            // Add a try block here to detect IComparers (or their
-            // underlying IComparables, etc) that are bogus.
-            try
-            {
-                IntrospectiveSort(keys, comparer);
-            }
-            catch (IndexOutOfRangeException)
-            {
-                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-            }
-        }
-
-        internal static int BinarySearchImpl(T[] array, int index, int length, T value, TComparer comparer)
-        {
-            try
-            {
-                return InternalBinarySearch(array, index, length, value, comparer);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                return 0;
-            }
-        }
-
-        internal static int InternalBinarySearch(T[] array, int index, int length, T value, TComparer comparer)
+        internal static int InternalBinarySearch<TComparer>(T[] array, int index, int length, T value, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
@@ -173,7 +109,8 @@ namespace System.Collections.Generic
             return ~lo;
         }
 
-        private static void SwapIfGreater(Span<T> keys, TComparer comparer, int i, int j)
+        private static void SwapIfGreater<TComparer>(Span<T> keys, TComparer comparer, int i, int j)
+            where TComparer : IComparer<T>, allows ref struct
         {
             Debug.Assert(i != j);
             Debug.Assert(comparer != null);
@@ -196,7 +133,8 @@ namespace System.Collections.Generic
             a[j] = t;
         }
 
-        internal static void IntrospectiveSort(Span<T> keys, TComparer comparer)
+        internal static void IntrospectiveSort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
         {
             if (keys.Length > 1)
             {
@@ -207,7 +145,8 @@ namespace System.Collections.Generic
         // IntroSort is recursive; block it from being inlined into itself as
         // this is currenly not profitable.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void IntroSort(Span<T> keys, int depthLimit, TComparer comparer)
+        private static void IntroSort<TComparer>(Span<T> keys, int depthLimit, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(depthLimit >= 0);
@@ -251,7 +190,8 @@ namespace System.Collections.Generic
             }
         }
 
-        private static int PickPivotAndPartition(Span<T> keys, TComparer comparer)
+        private static int PickPivotAndPartition<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
 
@@ -288,7 +228,8 @@ namespace System.Collections.Generic
             return left;
         }
 
-        private static void HeapSort(Span<T> keys, TComparer comparer)
+        private static void HeapSort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
         {
             Debug.Assert(!keys.IsEmpty);
 
@@ -305,7 +246,8 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void DownHeap(Span<T> keys, int i, int n, TComparer comparer)
+        private static void DownHeap<TComparer>(Span<T> keys, int i, int n, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
         {
             Debug.Assert(comparer != null);
 
@@ -328,7 +270,8 @@ namespace System.Collections.Generic
             keys[i - 1] = d;
         }
 
-        private static void InsertionSort(Span<T> keys, TComparer comparer)
+        private static void InsertionSort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
         {
             Debug.Assert(comparer != null);
 
@@ -660,34 +603,10 @@ namespace System.Collections.Generic
 
         public void SortFallBack(Span<TKey> keys, Span<TValue> values)
         {
-            Comparer<TKey> defaultComparer = Comparer<TKey>.Default;
-            ArraySortHelperPaired<TKey, TValue, Comparer<TKey>>.IntrospectiveSort(keys, values, defaultComparer);
+            IntrospectiveSort(keys, values, Comparer<TKey>.Default);
         }
 
         #endregion
-
-        internal static void Sort(Span<TKey> keys, Span<TValue> values)
-        {
-            // Add a try block here to detect IComparers (or their
-            // underlying IComparables, etc) that are bogus.
-            try
-            {
-                Default.SortFallBack(keys, values);
-            }
-            catch (IndexOutOfRangeException)
-            {
-                ThrowHelper.ThrowArgumentException_BadComparer(null);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-            }
-        }
-
-        internal static void Sort(Span<TKey> keys, Span<TValue> values, Comparison<TKey> comparer)
-        {
-            ArraySortHelperPaired<TKey, TValue, ValueComparisonComparer<TKey>>.Sort(keys, values, new(comparer));
-        }
 
         internal static void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer? comparer)
             where TComparer : IComparer<TKey>
@@ -696,13 +615,13 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null || (!typeof(TComparer).IsValueType && ReferenceEquals(comparer, Comparer<TKey>.Default)))
+                if (!typeof(TComparer).IsValueType && (comparer == null || ReferenceEquals(comparer, Comparer<TKey>.Default)))
                 {
                     Default.SortFallBack(keys, values);
                 }
                 else
                 {
-                    ArraySortHelperPaired<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, comparer);
+                    IntrospectiveSort(keys, values, comparer!);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -714,30 +633,9 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
             }
         }
-    }
 
-    internal static class ArraySortHelperPaired<TKey, TValue, TComparer>
-        where TComparer : IComparer<TKey>
-    {
-        internal static void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-        {
-            // Add a try block here to detect IComparers (or their
-            // underlying IComparables, etc) that are bogus.
-            try
-            {
-                IntrospectiveSort(keys, values, comparer);
-            }
-            catch (IndexOutOfRangeException)
-            {
-                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-            }
-        }
-
-        private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, TComparer comparer, int i, int j)
+        private static void SwapIfGreaterWithValues<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer, int i, int j)
+            where TComparer : IComparer<TKey>, allows ref struct
         {
             Debug.Assert(comparer != null);
             Debug.Assert(0 <= i && i < keys.Length && i < values.Length);
@@ -770,7 +668,8 @@ namespace System.Collections.Generic
             values[j] = v;
         }
 
-        internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        internal static void IntrospectiveSort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
         {
             Debug.Assert(comparer != null);
             Debug.Assert(keys.Length == values.Length);
@@ -781,7 +680,8 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit, TComparer comparer)
+        private static void IntroSort<TComparer>(Span<TKey> keys, Span<TValue> values, int depthLimit, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(values.Length == keys.Length);
@@ -827,7 +727,8 @@ namespace System.Collections.Generic
             }
         }
 
-        private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        private static int PickPivotAndPartition<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
             Debug.Assert(comparer != null);
@@ -865,7 +766,8 @@ namespace System.Collections.Generic
             return left;
         }
 
-        private static void HeapSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        private static void HeapSort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
         {
             Debug.Assert(comparer != null);
             Debug.Assert(!keys.IsEmpty);
@@ -883,7 +785,8 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, TComparer comparer)
+        private static void DownHeap<TComparer>(Span<TKey> keys, Span<TValue> values, int i, int n, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
         {
             Debug.Assert(comparer != null);
 
@@ -910,7 +813,8 @@ namespace System.Collections.Generic
             values[i - 1] = dValue;
         }
 
-        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        private static void InsertionSort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
         {
             Debug.Assert(comparer != null);
 

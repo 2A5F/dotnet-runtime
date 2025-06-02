@@ -4333,7 +4333,7 @@ namespace System
 
             if (span.Length > 1)
             {
-                ArraySortHelper<T>.Sort(span, comparison);
+                ArraySortHelper<T>.Sort(span, new ValueComparisonComparer<T>(comparison));
             }
         }
 
@@ -4410,7 +4410,7 @@ namespace System
 
             if (keys.Length > 1)
             {
-                ArraySortHelperPaired<TKey, TValue>.Sort(keys, items, comparison);
+                ArraySortHelperPaired<TKey, TValue>.Sort(keys, items, new ValueComparisonComparer<TKey>(comparison));
             }
         }
 
