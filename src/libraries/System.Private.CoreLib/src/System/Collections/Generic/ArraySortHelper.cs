@@ -22,12 +22,6 @@ namespace System.Collections.Generic
         public int Compare(object? x, object? y) => comparer(x!, y!);
     }
 
-    internal readonly struct DefaultComparer<T> : IComparer<T>
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare(T? x, T? y) => Comparer<T>.Default.Compare(x!, y!);
-    }
-
     #region ArraySortHelper for single arrays
 
     internal sealed partial class ArraySortHelper<T>
@@ -40,8 +34,8 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null) IntrospectiveSort(keys, default(DefaultComparer<T>));
-                else IntrospectiveSort(keys, comparer.Compare);
+                comparer ??= Comparer<T>.Default;
+                IntrospectiveSort(keys, comparer.Compare);
             }
             catch (IndexOutOfRangeException)
             {
@@ -57,7 +51,7 @@ namespace System.Collections.Generic
         {
             try
             {
-                if (comparer == null) return InternalBinarySearch(array, index, length, value, default(DefaultComparer<T>));
+                comparer ??= Comparer<T>.Default;
                 return InternalBinarySearch(array, index, length, value, comparer);
             }
             catch (Exception e)
@@ -691,8 +685,8 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null) IntrospectiveSort(keys, values, default(DefaultComparer<TKey>));
-                else IntrospectiveSort(keys, values, comparer);
+                comparer ??= Comparer<TKey>.Default;
+                IntrospectiveSort(keys, values, comparer);
             }
             catch (IndexOutOfRangeException)
             {
